@@ -1,45 +1,32 @@
-using System.Collections;
+п»їusing System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class Collect : StateMachineBehaviour
 {
-    private NavMeshAgent _agent;
-    private GameObject _target;
-
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        _agent = animator.GetComponent<NavMeshAgent>();
-        _target = GameObject.FindGameObjectWithTag ("Collectible");
-        if (_target != null)
-        {
-            _agent.SetDestination(_target.transform.position);
-            Debug.Log("Иду к предмету: " + _target.name);
-        }
-
-        else
-        {
-            Debug.Log("Предмет не найден.");
-            _agent.isStopped = true;
-        }
-    }
+    public float collectDistance = 1.5f;
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (_target != null)
+        AIController ai = animator.GetComponent<AIController>();
+        NavMeshAgent agent = animator.GetComponent<NavMeshAgent>();
+
+        GameObject target = ai.GetTargetItem();
+        if (target == null) return;
+
+        agent.isStopped = false;
+        agent.SetDestination(target.transform.position);
+
+        if (Vector3.Distance(animator.transform.position, target.transform.position) < collectDistance)
         {
-            Destroy(_target);
-            Debug.Log($"Предмет собран: {_target}");
-
-            _target = null;
-
-            animator.SetTrigger("Idle");
+            GameObject.Destroy(target);
+            ai.ClearTarget();
+            animator.SetBool("IsCollecting", false);
+            animator.SetTrigger("Collected");
         }
-    }
-
-    public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        _agent.isStopped = false;
     }
 }
